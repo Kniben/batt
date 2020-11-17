@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+# Requires upower and headsetcontrol (https://github.com/Sapd/HeadsetControl)
+
+import pydbus, os, re, json
+
+bus = pydbus.SystemBus()
+upower_devices = [bus.get('org.freedesktop.UPower', device_path)
+           for device_path in bus.get('org.freedesktop.UPower').EnumerateDevices()]
+
+upower_battery_dict = {device.Model: device.Percentage for device in upower_devices}
+
+
+hsc_regex = re.compile('''Found.*!\s*Battery: ([0-9]+)%\s*''')
+hsc_battery_match = hsc_regex.match(os.popen("headsetcontrol -b").read())
+hsc_battery_dict = {'Wireless Headset': int(hsc_battery_match.group(1))} if hsc_battery_match else {}
+
+print(json.dumps({**upower_battery_dict, **hsc_battery_dict}))
